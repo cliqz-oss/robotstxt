@@ -284,6 +284,19 @@ func TestWildcardPrefix(t *testing.T) {
 	}
 }
 
+const robots_text_wildcard = "User-agent: *\nDisallow: *"
+
+func TestWildCardDisallow(t *testing.T) {
+	r, err := FromString(robots_text_wildcard)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if r.TestAgent("/someurl", "WildcardBot") {
+		t.Fatal("Must not allow any urls")
+	}
+}
+
 func BenchmarkParseFromString001(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FromString(robots_text_001)
