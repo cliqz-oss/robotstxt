@@ -303,3 +303,20 @@ func BenchmarkParseFromStatus401(b *testing.B) {
 		FromStatusAndString(401, "")
 	}
 }
+
+const multiple_wildcard = "User-agent: *\nDisallow: /fcmedianet.js\nDisallow: /__media__/js/templates.js\nUser-agent: Googlebot\nDisallow:\nUser-agent: *\nDisallow: /"
+
+func TestMultipleWildcardAgent(t *testing.T) {
+	r, err := FromString(multiple_wildcard)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if r.TestAgent("/", "someBot") {
+		t.Fatal("Must not allow")
+	}
+
+	if !r.TestAgent("/", "GoogleBot") {
+		t.Fatal("Mush allow google")
+	}
+}
