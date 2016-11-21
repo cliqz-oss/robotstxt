@@ -321,7 +321,6 @@ const quoted_urls_and_rules = "User-agent: *\nDisallow /quotedRule/%3Fsome\nDisa
 
 func TestQuotedUrls(t *testing.T) {
 	r, err := FromString(quoted_urls_and_rules)
-
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -335,5 +334,22 @@ func TestQuotedUrls(t *testing.T) {
 		if r.TestAgent(u, "somebot") {
 			t.Fatal("url is should not be allowed", u)
 		}
+	}
+}
+
+const multiple_wildcard = "User-agent: *\nDisallow: /fcmedianet.js\nDisallow: /__media__/js/templates.js\nUser-agent: Googlebot\nDisallow:\nUser-agent: *\nDisallow: /"
+
+func TestMultipleWildcardAgent(t *testing.T) {
+	r, err := FromString(multiple_wildcard)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if r.TestAgent("/", "someBot") {
+		t.Fatal("Must not allow")
+	}
+
+	if !r.TestAgent("/", "GoogleBot") {
+		t.Fatal("Mush allow google")
+
 	}
 }

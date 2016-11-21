@@ -166,7 +166,10 @@ func (r *RobotsData) FindGroup(agent string) (ret *Group) {
 		for _, a := range g.agents {
 			if a == "*" && prefixLen == 0 {
 				// Weakest match possible
-				prefixLen = 1
+				// if the matcher is *, and there are multiple sections titled '*',
+				// take the last one as the correct one.
+				// this is what google corrently does (from robotstxt checker)
+				prefixLen = 0
 				ret = g
 			} else if strings.HasPrefix(agent, a) {
 				if l := len(a); l > prefixLen {
