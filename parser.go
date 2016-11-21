@@ -164,7 +164,7 @@ func (p *parser) parseLine() (li *lineInfo, err error) {
 			if !strings.HasPrefix(t2, "*") && !strings.HasPrefix(t2, "/") {
 				t2 = "/" + t2
 			}
-			if strings.HasSuffix(t2, "*") {
+			if t2 != "*" && strings.HasSuffix(t2, "*") {
 				t2 = strings.TrimRight(t2, "*")
 			}
 			// From google's spec:
