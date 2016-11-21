@@ -184,7 +184,7 @@ func (r *RobotsData) FindGroup(agent string) (ret *Group) {
 }
 
 func (g *Group) Test(path string) bool {
-	if r := g.findRule(path); r != nil {
+	if r := g.findRule(EscapeQuotes(path)); r != nil {
 		return r.allow
 	}
 

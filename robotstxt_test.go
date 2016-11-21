@@ -303,3 +303,24 @@ func BenchmarkParseFromStatus401(b *testing.B) {
 		FromStatusAndString(401, "")
 	}
 }
+
+const quoted_urls_and_rules = "User-agent: *\nDisallow /quotedRule/%3Fsome\nDisallow /unquoted/?some"
+
+func TestQuotedUrls(t *testing.T) {
+	r, err := FromString(quoted_urls_and_rules)
+
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	if !r.TestAgent("/", "someBot") {
+		t.Fatal("should allow /")
+	}
+
+	unallowd := []string{"/quotedRule/?some", "/quotedRule/%3Fsome", "/unquoted/%3Fsome", "/unquoted/?some"}
+	for _, u := range unallowd {
+		if r.TestAgent(u, "somebot") {
+			t.Fatal("url is should not be allowed", u)
+		}
+	}
+}

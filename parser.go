@@ -91,7 +91,7 @@ func (p *parser) parseAll() (groups []*Group, host string, sitemaps []string, er
 					if li.vr != nil {
 						curGroup.rules = append(curGroup.rules, &rule{"", false, li.vr})
 					} else {
-						curGroup.rules = append(curGroup.rules, &rule{li.vs, false, nil})
+						curGroup.rules = append(curGroup.rules, &rule{EscapeQuotes(li.vs), false, nil})
 					}
 				}
 
@@ -104,10 +104,10 @@ func (p *parser) parseAll() (groups []*Group, host string, sitemaps []string, er
 					if li.vr != nil {
 						curGroup.rules = append(curGroup.rules, &rule{"", true, li.vr})
 					} else {
-						curGroup.rules = append(curGroup.rules, &rule{li.vs, true, nil})
+						curGroup.rules = append(curGroup.rules, &rule{EscapeQuotes(li.vs), true, nil})
 					}
 				}
-				
+
 			case lHost:
 				host = li.vs
 
@@ -218,7 +218,7 @@ func (p *parser) parseLine() (li *lineInfo, err error) {
 		return returnPathVal(lAllow)
 
 	case "host":
-		// Host directive to specify main site mirror 
+		// Host directive to specify main site mirror
 		// Read more: https://help.yandex.com/webmaster/controlling-robot/robots-txt.xml#host
 		return returnStringVal(lHost)
 
