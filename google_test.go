@@ -94,7 +94,7 @@ func TestGroupOrder(t *testing.T) {
 		t.Fatal(e)
 	} else {
 		for i, a := range agents {
-			g := r.FindGroup(a)
+			g := r.FindGroups(a)[0]
 			gi := getIndexInSlice(r.groups, g) + 1
 			if gi != groups[i] {
 				t.Fatalf("Expected agent %s to have group number %d, got %d.", a, groups[i], gi)
