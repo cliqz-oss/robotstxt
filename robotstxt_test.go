@@ -256,9 +256,9 @@ func TestHtmlInstead(t *testing.T) {
 		// must be parsed silently.
 		t.Fatal(err.Error())
 	}
-	group := r.FindGroup("SuperBot")
-	if group == nil {
-		t.Fatal("Group must not be nil.")
+	group := r.FindGroups("SuperBot")
+	if len(group) != 0 {
+		t.Fatal("There shall be no matching groups.")
 	}
 	if !group.Test("/") {
 		t.Fatal("Must allow by default.")
@@ -337,15 +337,46 @@ func TestQuotedUrls(t *testing.T) {
 	}
 }
 
-const multiple_wildcard = "User-agent: *\nDisallow: /fcmedianet.js\nDisallow: /__media__/js/templates.js\nUser-agent: Googlebot\nDisallow:\nUser-agent: *\nDisallow: /"
+const multiple_wildcard = "User-agent: *\nDisallow: /path1\nUser-agent: Googlebot\nDisallow:\nUser-agent: *\nDisallow: /path2"
 
 func TestMultipleWildcardAgent(t *testing.T) {
 	r, err := FromString(multiple_wildcard)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	if r.TestAgent("/", "someBot") {
+	if r.TestAgent("/path2", "someBot") {
 		t.Fatal("Must not allow")
+	}
+
+	if !r.TestAgent("/", "GoogleBot") {
+		t.Fatal("Mush allow google")
+
+	}
+}
+
+
+func TestFindGroups(t *testing.T) {
+	r, err := FromString(multiple_wildcard)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	groups := r.FindGroups("someBot")
+
+	if len(groups) < 2 {
+		t.Fatal("Must be 2 wildcard groups")
+	}
+
+	if groups.Test("/path1") {
+		t.Fatal("Must not allow")
+	}
+
+	if groups.Test("/path2") {
+		t.Fatal("Must not allow")
+	}
+
+	if !groups.Test("/path3") {
+		t.Fatal("Must allow")
 	}
 
 	if !r.TestAgent("/", "GoogleBot") {

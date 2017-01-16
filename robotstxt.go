@@ -32,6 +32,9 @@ type Group struct {
 	CrawlDelay time.Duration
 }
 
+type GroupList []*Group
+
+
 type rule struct {
 	path    string
 	allow   bool
@@ -145,21 +148,24 @@ func (r *RobotsData) TestAgent(path, agent string) bool {
 		return false
 	}
 
-	// Find a group of rules that applies to this agent
-	// From Google's spec:
-	// The user-agent is non-case-sensitive.
-	g := r.FindGroup(agent)
+	// Find a groups of rules that applies to this agent
+	// From Google's spec: The user-agent is non-case-sensitive.
+	g := r.FindGroups(agent)
 	return g.Test(path)
 }
 
 // From Google's spec:
-// Only one group of group-member records is valid for a particular crawler.
+// "Only one group of group-member records is valid for a particular crawler.
 // The crawler must determine the correct group of records by finding the group
 // with the most specific user-agent that still matches. All other groups of
 // records are ignored by the crawler. The user-agent is non-case-sensitive.
-// The order of the groups within the robots.txt file is irrelevant.
-func (r *RobotsData) FindGroup(agent string) (ret *Group) {
+// The order of the groups within the robots.txt file is irrelevant."
+// Current implementation deviates from the spec: it returns all groups
+// with longest matching prefix. Path is tested against all of them,
+// last rule with longest matching prefix returned.
+func (r *RobotsData) FindGroups(agent string) (ret GroupList) {
 	var prefixLen int
+	ret = GroupList{}
 
 	agent = strings.ToLower(agent)
 	for _, g := range r.groups {
@@ -167,34 +173,31 @@ func (r *RobotsData) FindGroup(agent string) (ret *Group) {
 			if a == "*" && prefixLen == 0 {
 				// Weakest match possible
 				// if the matcher is *, and there are multiple sections titled '*',
-				// take the last one as the correct one.
-				// this is what google corrently does (from robotstxt checker)
+				// return all of them.
 				prefixLen = 0
-				ret = g
+				ret = append(ret, g)
 			} else if strings.HasPrefix(agent, a) {
-				if l := len(a); l > prefixLen {
+				l := len(a)
+				if l > prefixLen {
 					prefixLen = l
-					ret = g
+					ret = []*Group{g}
+				} else if l == prefixLen {
+					ret = append(ret, g)
 				}
 			}
 		}
 	}
-
-	if ret == nil {
-		return emptyGroup
-	}
 	return
 }
 
-func (g *Group) Test(path string) bool {
-	if r := g.findRule(EscapeQuotes(path)); r != nil {
+
+func (groupList GroupList) Test(path string) bool {
+	if r := groupList.findRule(EscapeQuotes(path)); r != nil {
 		return r.allow
 	}
-
-	// From Google's spec:
-	// By default, there are no restrictions for crawling for the designated crawlers.
 	return true
 }
+
 
 // From Google's spec:
 // The path value is used as a basis to determine whether or not a rule applies
@@ -206,28 +209,30 @@ func (g *Group) Test(path string) bool {
 // the most specific rule based on the length of the [path] entry will trump
 // the less specific (shorter) rule. The order of precedence for rules with
 // wildcards is undefined.
-func (g *Group) findRule(path string) (ret *rule) {
+func (groupList GroupList) findRule(path string) (ret *rule) {
 	var prefixLen int
 
-	for _, r := range g.rules {
-		if r.pattern != nil {
-			if r.pattern.MatchString(path) {
-				// Consider this a match equal to the length of the pattern.
-				// From Google's spec:
-				// The order of precedence for rules with wildcards is undefined.
-				if l := len(r.pattern.String()); l > prefixLen {
-					prefixLen = len(r.pattern.String())
+	for _, group := range groupList {
+		for _, r := range group.rules {
+			if r.pattern != nil {
+				if r.pattern.MatchString(path) {
+					// Consider this a match equal to the length of the pattern.
+					// From Google's spec:
+					// The order of precedence for rules with wildcards is undefined.
+					if l := len(r.pattern.String()); l > prefixLen {
+						prefixLen = len(r.pattern.String())
+						ret = r
+					}
+				}
+			} else if r.path == "/" && prefixLen == 0 {
+				// Weakest match possible
+				prefixLen = 1
+				ret = r
+			} else if strings.HasPrefix(path, r.path) {
+				if l := len(r.path); l > prefixLen {
+					prefixLen = l
 					ret = r
 				}
-			}
-		} else if r.path == "/" && prefixLen == 0 {
-			// Weakest match possible
-			prefixLen = 1
-			ret = r
-		} else if strings.HasPrefix(path, r.path) {
-			if l := len(r.path); l > prefixLen {
-				prefixLen = l
-				ret = r
 			}
 		}
 	}
