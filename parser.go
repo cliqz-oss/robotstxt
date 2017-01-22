@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -30,6 +29,7 @@ const (
 )
 
 type parser struct {
+	matcherConstructor MatcherConstructor
 	tokens []string
 	pos    int
 }
@@ -39,11 +39,11 @@ type lineInfo struct {
 	k  string         // String representation of the type of key
 	vs string         // String value of the key
 	vf float64        // Float value of the key
-	vr *regexp.Regexp // Regexp value of the key
+	vr Matcher        // Matcher value of the key
 }
 
-func newParser(tokens []string) *parser {
-	return &parser{tokens: tokens}
+func newParser(tokens []string, matcherConstructor MatcherConstructor) *parser {
+	return &parser{tokens: tokens, matcherConstructor: matcherConstructor}
 }
 
 func (p *parser) parseAll() (groups []*Group, host string, sitemaps []string, errs []error) {
@@ -173,12 +173,7 @@ func (p *parser) parseLine() (li *lineInfo, err error) {
 			//   * designates 0 or more instances of any valid character
 			//   $ designates the end of the URL
 			if strings.ContainsAny(t2, "*$") {
-				// Must compile a regexp, this is a pattern.
-				// Escape string before compile.
-				t2 = regexp.QuoteMeta(t2)
-				t2 = strings.Replace(t2, `\*`, `.*`, -1)
-				t2 = strings.Replace(t2, `\$`, `$`, -1)
-				if r, e := regexp.Compile(t2); e != nil {
+				if r, e := p.matcherConstructor(t2); e != nil {
 					return nil, e
 				} else {
 					return &lineInfo{t: t, k: t1, vr: r}, nil

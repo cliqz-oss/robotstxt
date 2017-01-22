@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -38,7 +37,7 @@ type GroupList []*Group
 type rule struct {
 	path    string
 	allow   bool
-	pattern *regexp.Regexp
+	pattern Matcher
 }
 
 type ParseError struct {
@@ -61,7 +60,7 @@ func (e ParseError) Error() string {
 
 var allowAll = &RobotsData{allowAll: true}
 var disallowAll = &RobotsData{disallowAll: true}
-var emptyGroup = &Group{}
+var RobotsPatternMatcherType = GLOB_MATCHER
 
 func FromStatusAndBytes(statusCode int, body []byte) (*RobotsData, error) {
 	switch {
@@ -104,7 +103,10 @@ func FromResponse(res *http.Response) (*RobotsData, error) {
 }
 
 func FromBytes(body []byte) (r *RobotsData, err error) {
-	var errs []error
+	var (
+		errs []error
+		matcherConstructor MatcherConstructor
+	)
 
 	// special case (probably not worth optimization?)
 	trimmed := bytes.TrimSpace(body)
@@ -127,7 +129,14 @@ func FromBytes(body []byte) (r *RobotsData, err error) {
 	}
 
 	r = &RobotsData{}
-	parser := newParser(tokens)
+
+	if RobotsPatternMatcherType == REGEXP_MATCHER {
+		matcherConstructor = NewRegexpMatcher
+	} else {
+		matcherConstructor = NewGlobMatcher
+	}
+
+	parser := newParser(tokens, matcherConstructor)
 	r.groups, r.Host, r.Sitemaps, errs = parser.parseAll()
 	if len(errs) > 0 {
 		return nil, newParseError(errs)
