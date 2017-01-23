@@ -77,6 +77,15 @@ Or query several paths against same user agent for performance.
     group.Test("/news/article-2012-1")
 
 
+3. Choose pattern matcher
+^^^^^^^^
+`regexp.Regexp` object caches one matching machine per concurrently matched goroutine.
+Every machine allocates 32+KB for every matched expression.
+With broad crawls and robotx.txt caching it becomes a problem.
+
+Alternative matcher that supports only "*" and "$" symbols can be used by setting
+`RobotsPatternMatcherType = GLOB_MATCHER`
+
 Who
 ===
 
