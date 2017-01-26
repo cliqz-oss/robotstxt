@@ -384,3 +384,16 @@ func TestFindGroups(t *testing.T) {
 
 	}
 }
+
+
+const trailing_slash = "User-agent: *\nDisallow: /repeatedprefix/*/repeatedprefix/"
+
+func TestTrailingSlash(t *testing.T) {
+	r, err := FromString(trailing_slash)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	if !r.TestAgent("/repeatedprefix/whatever", "anyagent") {
+		t.Fatal("Must allow")
+	}
+}

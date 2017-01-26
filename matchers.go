@@ -3,7 +3,7 @@ package robotstxt
 import (
 	"regexp"
 	"strings"
-	"github.com/ryanuber/go-glob"
+	"github.com/cliqz-oss/go-glob"
 )
 
 const (
